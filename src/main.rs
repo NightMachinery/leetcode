@@ -20,6 +20,7 @@ use futures::future::join_all;
 use futures::stream::StreamExt;
 use futures::task::SpawnExt;
 use std::sync::{Arc, Mutex};
+use std::env::args;
 
 /// main() helps to generate the submission template .rs
 fn main() {
@@ -27,7 +28,7 @@ fn main() {
     let mut initialized_ids = get_initialized_ids();
     loop {
         println!(
-            "Please enter a frontend problem id, \n\
+            "Input: a frontend problem id, \n\
             or \"random\" to generate a random one, \n\
             or \"solve $i\" to move problem to solution/, \n\
             or \"all\" to initialize all problems \n"
@@ -35,10 +36,21 @@ fn main() {
         let mut is_random = false;
         let mut is_solving = false;
         let mut id: u32 = 0;
-        let mut id_arg = String::new();
-        io::stdin()
-            .read_line(&mut id_arg)
-            .expect("Failed to read line");
+        let mut id_arg;
+
+        // let a = args().len();
+        // let b = args();
+        // println!("{:#?}      {:#?}", a, b);
+        if args().len() <= 1 {
+            println!("Input not specified by args, reading it from stdin now: ");
+            id_arg = String::new();
+            io::stdin()
+                .read_line(&mut id_arg)
+                .expect("Failed to read line");
+        } else {
+            id_arg = (args().collect::<Vec<String>>())[1..].join(" ");
+        }
+
         let id_arg = id_arg.trim();
 
         let random_pattern = Regex::new(r"^random$").unwrap();
@@ -98,13 +110,13 @@ fn main() {
                                 problem.title_slug.replace("-", "_")
                             ));
                         }
-                        .await;
+                            .await;
                         let code = code.unwrap();
                         // not sure this can be async
                         // maybe should use async-std io
                         async { deal_problem(&problem, &code, false) }.await
                     })
-                    .unwrap(),
+                        .unwrap(),
                 );
             }
             block_on(join_all(tasks));
